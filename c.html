@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>猫咪游戏</title>
+    <style>
+        body {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          background-color: #f0f0f0;
+          font-family: Arial, sans-serif;
+        }
+
+        #game {
+          display: grid;
+          grid-template-columns: repeat(30, 1fr);
+          grid-gap: 2px;
+          width: 900px;
+          height: 900px;
+          padding: 2px;
+          border: 1px solid #333;
+        }
+
+        .cell {
+          border: 1px solid #333;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .cell.empty {
+          background-color: #fff;
+        }
+
+        .cell.cat {
+          background-color: #f00;
+          color: #fff;
+        }
+
+        .cell.fence {
+          background-color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="game"></div>
+
+    <script>
+        var board = Array(30).fill(0).map(() => Array(30).fill(0));
+        var catPosition = {x: 15, y: 15};
+        drawBoard();
+
+        function drawBoard() {
+            var gameElement = document.getElementById("game");
+            gameElement.innerHTML = "";
+            for (var i = 0; i < 30; i++) {
+                for (var j = 0; j < 30; j++) {
+                    var cellElement = document.createElement("div");
+                    cellElement.className = "cell";
+                    if (board[i][j] === 0) {
+                        cellElement.classList.add("empty");
+                    } else if (board[i][j] === 1) {
+                        cellElement.classList.add("fence");
+                    }
+                    if (i === catPosition.x && j === catPosition.y) {
+                        cellElement.classList.remove("empty");
+                        cellElement.classList.add("cat");
+                        cellElement.innerText = "🐱";
+                    }
+                    cellElement.addEventListener("click", (function(i, j) {
+                        return function() {
+                            if(board[i][j] === 0) {
+                                board[i][j] = 1;
+                                moveCat();
+                                checkWin();
+                                drawBoard();
+                            }
+                        };
+                    })(i, j));
+                    gameElement.appendChild(cellElement);
+                }
+            }
+        }
+
+        function moveCat() {
+            var possibleMoves = [
+                {x: catPosition.x + 1, y: catPosition.y}, // 下
+                {x: catPosition.x - 1, y: catPosition.y}, // 上
+                {x: catPosition.x, y: catPosition.y + 1}, // 右
+                {x: catPosition.x, y: catPosition.y - 1}, // 左
+                {x: catPosition.x + 1, y: catPosition.y + 1}, // 右下角
+                {x: catPosition.x - 1, y: catPosition.y - 1}, // 左上角
+                {x: catPosition.x + 1, y: catPosition.y - 1}, // 左下角
+                {x: catPosition.x - 1, y: catPosition.y + 1}  // 右上角
+            ];
+
+            possibleMoves = possibleMoves.filter(function(move) {
+                return move.x >= 0 && move.x < 30 && move.y >= 0 && move.y < 30 && board[move.x][move.y] !== 1;
+            });
+
+            if(possibleMoves.length > 0) {
+                possibleMoves.sort(function(a, b) {
+                    var distanceA = Math.min(a.x, a.y, 29 - a.x, 29 - a.y);
+                    var distanceB = Math.min(b.x, b.y, 29 - b.x, 29 - b.y);
+                    return distanceA - distanceB;
+                });
+
+                var bestMoves = possibleMoves.filter(function(move) {
+                    var distance = Math.min(move.x, move.y, 29 - move.x, 29 - move.y);
+                    var bestDistance = Math.min(possibleMoves[0].x, possibleMoves[0].y, 29 - possibleMoves[0].x, 29 - possibleMoves[0].y);
+                    return distance === bestDistance;
+                });
+
+                catPosition = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+
+                if(catPosition.x === 0 || catPosition.y === 0 || catPosition.x === 29 || catPosition.y === 29) {
+                    alert("猫咪赢了！");
+                }
+            }
+        }
+
+        function checkWin() {
+            var visited = Array(30).fill(false).map(() => Array(30).fill(false));
+
+            function dfs(x, y) {
+                if (x < 0 || y < 0 || x >= 30 || y >= 30 || visited[x][y] || board[x][y] === 1) {
+                    return false;
+                }
+                if (x === 0 || y === 0 || x === 29 || y === 29) {
+                    return true;
+                }
+
+                visited[x][y] = true;
+
+                return dfs(x + 1, y) || dfs(x - 1, y) || dfs(x, y + 1) || dfs(x, y - 1) || dfs(x + 1, y + 1) || dfs(x - 1, y - 1) || dfs(x + 1, y - 1) || dfs(x - 1, y + 1);
+            }
+
+            if (!dfs(catPosition.x, catPosition.y)) {
+                alert("用户赢了！");
+            }
+        }
+    </script>
+</body>
+</html>
